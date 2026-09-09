@@ -54,9 +54,9 @@ RIGHT_EDGE = 970
 FONT_SIZE = 16
 CHAR_W = 9.6
 ROW = 20
-PIPE_X = 775
-LEFT_VALUE_X = 755
-RIGHT_LABEL_X = 795
+PIPE_X = 640
+LEFT_VALUE_X = PIPE_X - 20
+RIGHT_LABEL_X = PIPE_X + 20
 CODE_STATS_REFRESH_DAYS = 7
 
 
@@ -189,6 +189,7 @@ def code_stats(owned_repos, token):
     total_loc = 0
     total_additions = 0
     total_deletions = 0
+    total_commits = 0
     counted = 0
 
     with tempfile.TemporaryDirectory(prefix="profile-code-stats-") as temp:
@@ -257,6 +258,23 @@ def code_stats(owned_repos, token):
                         if deleted.isdigit():
                             total_deletions += int(deleted)
 
+                commits = subprocess.run(
+                    [
+                        "git", "-C", str(dest), "rev-list",
+                        "--count", "--no-merges", "HEAD",
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=120,
+                    check=False,
+                )
+                if commits.returncode == 0:
+                    try:
+                        total_commits += int(commits.stdout.strip() or 0)
+                    except ValueError:
+                        pass
+
                 counted += 1
             except (
                 subprocess.TimeoutExpired,
@@ -274,13 +292,14 @@ def code_stats(owned_repos, token):
         "loc": total_loc,
         "additions": total_additions,
         "deletions": total_deletions,
+        "commits": total_commits,
     }
 
 
 def code_stats_are_stale(cache, username):
     if cache.get("username") != username:
         return True
-    if any(cache.get(key) is None for key in ("loc", "additions", "deletions")):
+    if any(cache.get(key) is None for key in ("loc", "additions", "deletions", "commits")):
         return True
     stamp = cache.get("code_stats_updated_at") or cache.get("loc_updated_at")
     if not stamp:
@@ -429,16 +448,48 @@ def continuation(value, y):
 
 def left_stat(label, value, y):
     value = fmt_stat(value)
+    value_end = LEFT_VALUE_X
     label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
-    value_start = LEFT_VALUE_X - len(value) * CHAR_W
+    value_start = value_end - len(value) * CHAR_W
     gap = value_start - label_end
     dots = "." * max(3, int(gap / CHAR_W))
     return (
         f'<tspan x="{RIGHT_X}" y="{y}" class="dots">. </tspan>'
         f'<tspan class="key">{escape(label)}</tspan>:'
         f'<tspan class="dots"> {dots} </tspan>'
-        f'<tspan x="{LEFT_VALUE_X}" y="{y}" text-anchor="end" class="value">'
+        f'<tspan x="{value_end}" y="{y}" text-anchor="end" class="value">'
         f"{escape(value)}</tspan>"
+        f'<tspan x="{PIPE_X}" y="{y}" class="cc">|</tspan>'
+    )
+
+
+def repo_stat_row(stats, y):
+    label = "Repos"
+    repos = fmt_stat(stats.get("repos"))
+    contributed = fmt_stat(stats.get("contributed", 0))
+    contrib_prefix = "{Contributed: "
+    contrib_suffix = "}"
+    contrib_text = contrib_prefix + contributed + contrib_suffix
+
+    contrib_end = PIPE_X - 14
+    contrib_start = contrib_end - len(contrib_text) * CHAR_W
+    repo_end = contrib_start - CHAR_W
+    label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
+    repo_start = repo_end - len(repos) * CHAR_W
+    gap = repo_start - label_end
+    dots = "." * max(2, int(gap / CHAR_W))
+
+    number_x = contrib_start + len(contrib_prefix) * CHAR_W
+    suffix_x = number_x + len(contributed) * CHAR_W
+
+    return (
+        f'<tspan x="{RIGHT_X}" y="{y}" class="dots">. </tspan>'
+        f'<tspan class="key">{label}</tspan>:'
+        f'<tspan class="dots"> {dots} </tspan>'
+        f'<tspan x="{repo_end}" y="{y}" text-anchor="end" class="value">{escape(repos)}</tspan>'
+        f'<tspan x="{contrib_start:.1f}" y="{y}" class="key">{escape(contrib_prefix)}</tspan>'
+        f'<tspan x="{number_x:.1f}" y="{y}" class="value">{escape(contributed)}</tspan>'
+        f'<tspan x="{suffix_x:.1f}" y="{y}" class="key">{escape(contrib_suffix)}</tspan>'
         f'<tspan x="{PIPE_X}" y="{y}" class="cc">|</tspan>'
     )
 
@@ -460,26 +511,25 @@ def right_stat(label, value, y):
 def code_stat_row(stats, y):
     label = "Lines of Code on GitHub"
     value = fmt_stat(stats.get("loc"))
+    value_end = PIPE_X - 14
     label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
-    value_start = LEFT_VALUE_X - len(value) * CHAR_W
+    value_start = value_end - len(value) * CHAR_W
     gap = value_start - label_end
-    dots = "." * max(3, int(gap / CHAR_W))
+    dots = "." * max(2, int(gap / CHAR_W))
 
-    added = compact_stat(stats.get("additions"))
-    deleted = compact_stat(stats.get("deletions"))
+    added = fmt_stat(stats.get("additions"))
+    deleted = fmt_stat(stats.get("deletions"))
 
     return (
         f'<tspan x="{RIGHT_X}" y="{y}" class="dots">. </tspan>'
         f'<tspan class="key">{label}</tspan>:'
         f'<tspan class="dots"> {dots} </tspan>'
-        f'<tspan x="{LEFT_VALUE_X}" y="{y}" text-anchor="end" class="value">'
-        f"{escape(value)}</tspan>"
-        f'<tspan x="{PIPE_X}" y="{y}" class="cc">|</tspan>'
-        f'<tspan x="{RIGHT_LABEL_X}" y="{y}" class="cc">(</tspan>'
+        f'<tspan x="{value_end}" y="{y}" text-anchor="end" class="value">{escape(value)}</tspan>'
+        f'<tspan x="{PIPE_X}" y="{y}" class="cc">( </tspan>'
         f'<tspan class="addColor">{escape(added)}++</tspan>'
         f'<tspan class="cc">, </tspan>'
         f'<tspan class="delColor">{escape(deleted)}--</tspan>'
-        f'<tspan class="cc">)</tspan>'
+        f'<tspan class="cc"> )</tspan>'
     )
 
 
@@ -546,9 +596,9 @@ def render(theme, stats):
         f'<tspan class="cc">{"—" * 53}</tspan>'
     )
 
-    body.append(left_stat("Repos", stats.get("repos"), 470))
+    body.append(repo_stat_row(stats, 470))
     body.append(right_stat("Stars", stats.get("stars"), 470))
-    body.append(left_stat("Contrib", stats.get("contributed", 0), 490))
+    body.append(left_stat("Commits", stats.get("commits"), 490))
     body.append(right_stat("Followers", stats.get("followers"), 490))
     body.append(code_stat_row(stats, 510))
 
@@ -578,6 +628,7 @@ def main():
         f"contrib={fmt_stat(stats.get('contributed', 0))},",
         f"stars={fmt_stat(stats.get('stars'))},",
         f"followers={fmt_stat(stats.get('followers'))},",
+        f"commits={fmt_stat(stats.get('commits'))},",
         f"loc={fmt_stat(stats.get('loc'))},",
         f"added={fmt_stat(stats.get('additions'))},",
         f"deleted={fmt_stat(stats.get('deletions'))}",
