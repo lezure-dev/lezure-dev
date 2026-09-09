@@ -16,8 +16,13 @@ LINES = [x[lead:].rstrip() for x in LINES]
 
 DARK = {"bg":"#161b22","main":"#c9d1d9","key":"#ffa657","value":"#a5d6ff","add":"#3fb950","delete":"#f85149","cc":"#616e7f"}
 LIGHT = {"bg":"#f6f8fa","main":"#24292f","key":"#953800","value":"#0a3069","add":"#1a7f37","delete":"#cf222e","cc":"#c2cfde"}
-W, H, RIGHT_X, VALUE_X, FONT_SIZE = 985, 530, 300, 560, 16
 
+W, H = 985, 530
+RIGHT_X = 300
+RIGHT_EDGE = 970
+FONT_SIZE = 16
+CHAR_W = 9.6
+ROW = 20
 
 def add_months(d, months):
     total = d.year * 12 + d.month - 1 + months
@@ -25,7 +30,6 @@ def add_months(d, months):
     month = m0 + 1
     day = min(d.day, calendar.monthrange(year, month)[1])
     return dt.date(year, month, day)
-
 
 def age_text():
     birthday = dt.date.fromisoformat(PROFILE["birthday"])
@@ -43,24 +47,30 @@ def age_text():
     days = (today - cursor).days
     return f"{years} years, {months} months, {days} days"
 
-
-def leader_dots(label):
-    current = RIGHT_X + (2 + len(label) + 2) * 9.6
-    return "." * max(3, int((VALUE_X - current) / 9.6))
-
+def dots_between(label, value, min_dots=3):
+    label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
+    value_start = RIGHT_EDGE - len(str(value)) * CHAR_W
+    gap = value_start - label_end
+    return "." * max(min_dots, int(gap / CHAR_W) - 1)
 
 def item(label, value, y):
+    value = str(value)
+    dots = dots_between(label, value)
     return (
         f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>'
         f'<tspan class="key">{escape(label)}</tspan>:'
-        f'<tspan class="cc"> {leader_dots(label)} </tspan>'
-        f'<tspan x="{VALUE_X}" y="{y}" class="value">{escape(str(value))}</tspan>'
+        f'<tspan class="cc"> {dots} </tspan>'
+        f'<tspan x="{RIGHT_EDGE}" y="{y}" text-anchor="end" class="value">{escape(value)}</tspan>'
     )
 
+def continuation(value, y):
+    return (
+        f'<tspan x="{RIGHT_EDGE}" y="{y}" text-anchor="end" class="value">'
+        f'{escape(str(value))}</tspan>'
+    )
 
 def render(theme):
     C = DARK if theme == "dark" else LIGHT
-    stats = PROFILE["stats_preview"]
 
     ascii_font, ascii_line, ascii_top = 16.6, 14.15, 18
     ascii_h = len(LINES) * ascii_line
@@ -84,67 +94,84 @@ def render(theme):
     y = 50
     for label, value in PROFILE["system"]:
         body.append(item(label, age_text() if value == "__AGE__" else value, y))
-        y += 20
+        y += ROW
 
     body.append(f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>')
-    y += 20
+    y += ROW
 
     for label, value in PROFILE["stack"]:
         if isinstance(value, list):
             body.append(item(label, value[0], y))
-            y += 20
-            for continuation in value[1:]:
-                body.append(f'<tspan x="{VALUE_X}" y="{y}" class="value">{escape(continuation)}</tspan>')
-                y += 20
+            y += ROW
+            for cont in value[1:]:
+                body.append(continuation(cont, y))
+                y += ROW
         else:
             body.append(item(label, value, y))
-            y += 20
+            y += ROW
 
     body.append(f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>')
-    y += 20
+    y += ROW
 
     for label, value in PROFILE["hobbies"]:
         body.append(item(label, value, y))
-        y += 20
+        y += ROW
 
-    body.append(f'<tspan x="{RIGHT_X}" y="360">- Contact </tspan><tspan class="cc">{"—" * 56}</tspan>')
+    body.append(
+        f'<tspan x="{RIGHT_X}" y="360">- Contact </tspan>'
+        f'<tspan class="cc">{"—" * 56}</tspan>'
+    )
     cy = 380
     for label, value in PROFILE["contact"]:
         body.append(item(label, value, cy))
-        cy += 20
+        cy += ROW
 
-    body.append(f'<tspan x="{RIGHT_X}" y="450">- GitHub Stats </tspan><tspan class="cc">{"—" * 51}</tspan>')
+    body.append(
+        f'<tspan x="{RIGHT_X}" y="450">- GitHub Stats </tspan>'
+        f'<tspan class="cc">{"—" * 51}</tspan>'
+    )
 
-    s = lambda key: str(stats.get(key, "N/A"))
-    PIPE_X, RIGHT_LABEL_X, RIGHT_VALUE_X, LEFT_VALUE_X = 775, 795, 970, 745
+    PIPE_X = 775
+    RIGHT_LABEL_X = 795
+
+    def left_dots(label):
+        label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
+        return "." * max(3, int((PIPE_X - 18 - label_end) / CHAR_W))
+
+    def right_dots(label):
+        label_end = RIGHT_LABEL_X + (len(label) + 2) * CHAR_W
+        return "." * max(3, int((RIGHT_EDGE - label_end) / CHAR_W))
 
     body.append(
         f'<tspan x="{RIGHT_X}" y="470" class="cc">. </tspan>'
-        f'<tspan class="key">Repos</tspan>:<tspan class="cc"> ........ </tspan>'
-        f'<tspan class="value">{escape(s("repos"))}</tspan> '
-        f'{{<tspan class="key">Contributed</tspan>: <tspan class="value">{escape(s("contributed"))}</tspan>}}'
-        f'<tspan x="{PIPE_X}" y="470" class="cc"> | </tspan>'
+        f'<tspan class="key">Repos</tspan>:'
+        f'<tspan class="cc"> {left_dots("Repos")} </tspan>'
+        f'<tspan x="{PIPE_X}" y="470" class="cc">|</tspan>'
         f'<tspan x="{RIGHT_LABEL_X}" y="470" class="key">Stars</tspan>:'
-        f'<tspan class="cc"> ............ </tspan>'
-        f'<tspan x="{RIGHT_VALUE_X}" y="470" text-anchor="end" class="value">{escape(s("stars"))}</tspan>'
+        f'<tspan class="cc"> {right_dots("Stars")}</tspan>'
     )
 
     body.append(
         f'<tspan x="{RIGHT_X}" y="490" class="cc">. </tspan>'
-        f'<tspan class="key">Commits</tspan>:<tspan class="cc"> ........................ </tspan>'
-        f'<tspan x="{LEFT_VALUE_X}" y="490" text-anchor="end" class="value">{escape(s("commits"))}</tspan>'
-        f'<tspan x="{PIPE_X}" y="490" class="cc"> | </tspan>'
+        f'<tspan class="key">Commits</tspan>:'
+        f'<tspan class="cc"> {left_dots("Commits")} </tspan>'
+        f'<tspan x="{PIPE_X}" y="490" class="cc">|</tspan>'
         f'<tspan x="{RIGHT_LABEL_X}" y="490" class="key">Followers</tspan>:'
-        f'<tspan class="cc"> ....... </tspan>'
-        f'<tspan x="{RIGHT_VALUE_X}" y="490" text-anchor="end" class="value">{escape(s("followers"))}</tspan>'
+        f'<tspan class="cc"> {right_dots("Followers")}</tspan>'
     )
 
+    loc_label = "Lines of Code on GitHub"
+    loc_label_end = RIGHT_X + (2 + len(loc_label) + 2) * CHAR_W
+    loc_dots = "." * max(3, int((PIPE_X - 18 - loc_label_end) / CHAR_W))
     body.append(
         f'<tspan x="{RIGHT_X}" y="510" class="cc">. </tspan>'
-        f'<tspan class="key">Lines of Code on GitHub</tspan>:<tspan class="cc"> ........ </tspan>'
-        f'<tspan class="value">{escape(s("loc"))}</tspan><tspan class="cc"> ( </tspan>'
-        f'<tspan class="addColor">{escape(s("additions"))}++</tspan><tspan class="cc">, </tspan>'
-        f'<tspan class="delColor">{escape(s("deletions"))}--</tspan><tspan class="cc"> )</tspan>'
+        f'<tspan class="key">{loc_label}</tspan>:'
+        f'<tspan class="cc"> {loc_dots} </tspan>'
+        f'<tspan x="{PIPE_X}" y="510" class="cc">( </tspan>'
+        f'<tspan class="addColor">........++</tspan>'
+        f'<tspan class="cc">, </tspan>'
+        f'<tspan class="delColor">........--</tspan>'
+        f'<tspan class="cc"> )</tspan>'
     )
 
     return f'''<?xml version="1.0" encoding="UTF-8"?>
@@ -159,13 +186,11 @@ text,tspan{{white-space:pre;}}
 <text x="{RIGHT_X}" y="30" fill="{C["main"]}">{''.join(body)}</text>
 </svg>'''
 
-
 def main():
     for theme in ("dark", "light"):
         (ROOT / "assets" / f"{theme}_mode.svg").write_text(render(theme), encoding="utf-8")
     print("Uptime:", age_text())
-    print("GitHub stats intentionally remain N/A for now.")
-
+    print("GitHub stats intentionally render as dotted placeholders.")
 
 if __name__ == "__main__":
     main()
