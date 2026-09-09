@@ -36,4 +36,5 @@ jobs:
           git add assets/dark_mode.svg assets/light_mode.svg stats_cache.json
           git diff --cached --quiet && exit 0
           git commit -m "chore: update profile"
+          git pull --rebase origin main
           git push
