@@ -16,3 +16,9 @@ Changes in this pass:
 Preview uptime: 22 years, 11 months, 0 days
 
 Push the contents into your public `fkpanni/fkpanni` profile repository.
+
+V12:
+- IDE versions pinned to current stable: Neovim 0.12.5, VS Code 1.136.2
+- expanded hobbies
+- GitHub stats use fixed columns with aligned pipes
+- right-side stat values anchor to the card edge
