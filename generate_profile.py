@@ -105,11 +105,61 @@ def render(theme,stats):
     cy=380
     for label,value in PROFILE["contact"]:
         body.append(item(label,value,cy)); cy+=20
-    body.append(f'<tspan x="{RIGHT_X}" y="450">- GitHub Stats </tspan><tspan class="cc">{"—"*51}</tspan>')
-    s=lambda k:str(stats.get(k,"N/A"))
-    body.append(f'<tspan x="{RIGHT_X}" y="470" class="cc">. </tspan><tspan class="key">Repos</tspan>:<tspan class="cc"> .... </tspan><tspan class="value">{escape(s("repos"))}</tspan> {{<tspan class="key">Contributed</tspan>: <tspan class="value">{escape(s("contributed"))}</tspan>}} | <tspan class="key">Stars</tspan>:<tspan class="cc"> ...... </tspan><tspan class="value">{escape(s("stars"))}</tspan>')
-    body.append(f'<tspan x="{RIGHT_X}" y="490" class="cc">. </tspan><tspan class="key">Commits</tspan>:<tspan class="cc"> ............ </tspan><tspan class="value">{escape(s("commits"))}</tspan> | <tspan class="key">Followers</tspan>:<tspan class="cc"> ...... </tspan><tspan class="value">{escape(s("followers"))}</tspan>')
-    body.append(f'<tspan x="{RIGHT_X}" y="510" class="cc">. </tspan><tspan class="key">Lines of Code on GitHub</tspan>:<tspan class="cc"> . </tspan><tspan class="value">{escape(s("loc"))}</tspan> ( <tspan class="addColor">{escape(s("additions"))}</tspan><tspan class="addColor">++</tspan>, <tspan class="delColor">{escape(s("deletions"))}</tspan><tspan class="delColor">--</tspan> )')
+    # GitHub Stats: fixed-column layout.
+    # Labels hug the left of each field, values are right-aligned,
+    # dotted leaders fill the middle, and both pipes share the same x.
+    STATS_PIPE_X = 775
+    STATS_RIGHT_LABEL_X = 795
+    STATS_RIGHT_VALUE_X = 970
+    STATS_LEFT_VALUE_X = 745
+
+    body.append(
+        f'<tspan x="{RIGHT_X}" y="450">- GitHub Stats </tspan>'
+        f'<tspan class="cc">{"—"*51}</tspan>'
+    )
+
+    def s(k):
+        return str(stats.get(k, "N/A"))
+
+    # Row 1: Repos / Contributed | Stars
+    body.append(
+        f'<tspan x="{RIGHT_X}" y="470" class="cc">. </tspan>'
+        f'<tspan class="key">Repos</tspan>:'
+        f'<tspan class="cc"> ........ </tspan>'
+        f'<tspan class="value">{escape(s("repos"))}</tspan> '
+        f'{{<tspan class="key">Contributed</tspan>: '
+        f'<tspan class="value">{escape(s("contributed"))}</tspan>}}'
+        f'<tspan x="{STATS_PIPE_X}" y="470" class="cc"> | </tspan>'
+        f'<tspan x="{STATS_RIGHT_LABEL_X}" y="470" class="key">Stars</tspan>:'
+        f'<tspan class="cc"> ............ </tspan>'
+        f'<tspan x="{STATS_RIGHT_VALUE_X}" y="470" text-anchor="end" class="value">{escape(s("stars"))}</tspan>'
+    )
+
+    # Row 2: Commits | Followers
+    body.append(
+        f'<tspan x="{RIGHT_X}" y="490" class="cc">. </tspan>'
+        f'<tspan class="key">Commits</tspan>:'
+        f'<tspan class="cc"> ........................ </tspan>'
+        f'<tspan x="{STATS_LEFT_VALUE_X}" y="490" text-anchor="end" class="value">{escape(s("commits"))}</tspan>'
+        f'<tspan x="{STATS_PIPE_X}" y="490" class="cc"> | </tspan>'
+        f'<tspan x="{STATS_RIGHT_LABEL_X}" y="490" class="key">Followers</tspan>:'
+        f'<tspan class="cc"> ....... </tspan>'
+        f'<tspan x="{STATS_RIGHT_VALUE_X}" y="490" text-anchor="end" class="value">{escape(s("followers"))}</tspan>'
+    )
+
+    # Row 3: full-width LOC, with the final value group ending at the right edge.
+    body.append(
+        f'<tspan x="{RIGHT_X}" y="510" class="cc">. </tspan>'
+        f'<tspan class="key">Lines of Code on GitHub</tspan>:'
+        f'<tspan class="cc"> ........ </tspan>'
+        f'<tspan class="value">{escape(s("loc"))}</tspan>'
+        f'<tspan class="cc"> ( </tspan>'
+        f'<tspan class="addColor">{escape(s("additions"))}++</tspan>'
+        f'<tspan class="cc">, </tspan>'
+        f'<tspan class="delColor">{escape(s("deletions"))}--</tspan>'
+        f'<tspan class="cc"> )</tspan>'
+    )
+
     return f'''<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" font-family="ConsolasFallback,Consolas,monospace" width="{W}px" height="{H}px" font-size="{FONT_SIZE}px"><style>@font-face{{src:local('Consolas'),local('Consolas Bold');font-family:'ConsolasFallback';font-display:swap;-webkit-size-adjust:109%;size-adjust:109%;}}.key{{fill:{C["key"]};}}.value{{fill:{C["value"]};}}.addColor{{fill:{C["add"]};}}.delColor{{fill:{C["delete"]};}}.cc{{fill:{C["cc"]};}}text,tspan{{white-space:pre;}}</style><rect width="{W}px" height="{H}px" fill="{C["bg"]}" rx="15"/><text x="15" y="30" fill="{C["main"]}" class="ascii" font-size="{ascii_font:.3f}px">{art}</text><text x="{RIGHT_X}" y="30" fill="{C["main"]}">{''.join(body)}</text></svg>'''
 
 def main():
