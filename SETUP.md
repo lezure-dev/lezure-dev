@@ -1,24 +1,56 @@
-# fkpanni GitHub profile README — compact DNA v9
+# efkay GitHub profile README — neofetch layout
 
-This version uses the shorter 29×49 DNA ASCII and a 620px-high card.
+This version deliberately mirrors the information density and visual grammar of
+Andrew6rant's profile card while using efkay-specific content and a custom DNA ASCII.
 
-- artwork is enlarged to span almost the entire left panel
-- overall README card is much shorter
-- right-side typography is tightened to preserve the same information
-- dark/light variants included
+## Content
+
+- OS / role / location / education / IDE
+- three compact stack rows
+- hobbies section
+- contact section
+- GitHub stats section
+- portfolio links to `efkay.vercel.app`
+
+## Dynamic GitHub stats
+
+The included Action updates:
+
+- owned repositories
+- repositories contributed to
+- stars received
+- commit contributions
+- followers
+- authored additions / deletions / net lines of code
+
+The LOC routine caches each repo using its default-branch HEAD SHA, so unchanged
+repositories do not need their entire commit history queried again.
 
 ## Install
 
-Use the public profile repository `fkpanni/fkpanni`, copy these files in, then:
+Use your public profile repository:
+
+`fkpanni/fkpanni`
+
+Copy these files into it, then:
 
 ```bash
 git add .
-git commit -m "feat: compact dna profile readme"
+git commit -m "feat: add neofetch profile readme"
 git push
 ```
 
-Edit `profile.json` or `ascii/helix.txt`, then regenerate with:
+The first Action run will replace the preview stat placeholders with live values.
+
+## Edit later
+
+- profile text: `profile.json`
+- ASCII: `ascii/helix.txt`
+
+Then run:
 
 ```bash
 python generate_profile.py
 ```
+
+or let the included GitHub Action regenerate it.

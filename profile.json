@@ -1,130 +1,73 @@
 {
-  "display_name": "efkay",
-  "location_line": "Chicago \u00b7 open to remote / hybrid / onsite",
-  "overview": [
+  "header": "efkay@github",
+  "system": [
     [
-      "Name",
-      "Fahd Khan / efkay"
+      "OS",
+      "Windows 11, EndeavourOS"
     ],
     [
       "Role",
       "Software Engineer"
     ],
     [
-      "Track",
-      "Software \u00b7 Security \u00b7 Interactive Systems \u00b7 UI/UX"
-    ],
-    [
-      "Priority",
-      "Full-time software engineering roles"
-    ],
-    [
-      "Current",
-      "Solo game development"
-    ],
-    [
-      "Status",
-      "Open to opportunities"
+      "Location",
+      "Chicago, Illinois"
     ],
     [
       "Education",
-      "M.S. Cybersecurity \u00b7 B.S. CS \u00b7 IIT 2026"
+      "M.S. Cybersecurity, B.S. Computer Science"
     ],
     [
-      "Cert",
-      "IBM Open Project Developer Level I \u00b7 2025"
-    ],
-    [
-      "OS",
-      "Windows 11 \u00b7 EndeavourOS"
+      "IDE",
+      "VS Code"
     ]
   ],
   "stack": [
     [
-      "Languages",
-      "TypeScript \u00b7 Python \u00b7 JavaScript \u00b7 Swift \u00b7 Java \u00b7 SQL \u00b7 C++ \u00b7 C"
+      "Languages.Programming",
+      "TypeScript, Python, JavaScript, Swift, Java"
     ],
     [
-      "Web",
-      "React 19 \u00b7 Vite 8 \u00b7 React Router \u00b7 Zustand \u00b7 Zod"
+      "Stack.Web",
+      "React, Vite, Supabase, Zustand"
     ],
     [
-      "Interface",
-      "UI/UX \u00b7 Three.js \u00b7 responsive systems \u00b7 accessibility"
-    ],
-    [
-      "Data",
-      "Node.js \u00b7 Supabase \u00b7 Dexie/IndexedDB \u00b7 SQL"
-    ],
-    [
-      "Testing",
-      "Vitest \u00b7 Testing Library \u00b7 Playwright \u00b7 axe"
-    ],
-    [
-      "Security",
-      "Kali Linux \u00b7 Burp Suite \u00b7 Nmap \u00b7 Wireshark \u00b7 Metasploit"
-    ],
-    [
-      "AI",
-      "OpenAI API \u00b7 Anthropic API \u00b7 AI agent workflows"
-    ],
-    [
-      "GameDev",
-      "Godot 4 \u00b7 GDScript \u00b7 Blender \u00b7 FSM/AI \u00b7 procedural systems"
-    ],
-    [
-      "Tools",
-      "Git \u00b7 Vercel \u00b7 REST/serverless APIs \u00b7 VS Code"
+      "Stack.Systems",
+      "Linux, Git, Godot 4, Tauri"
     ]
   ],
-  "work": [
+  "hobbies": [
     [
-      "Building",
-      "Independent game systems + playable prototypes"
+      "Hobbies.Physical",
+      "Climbing, Hiking, Gym"
     ],
     [
-      "Game",
-      "DON'T LOOK AWAY \u00b7 verified/playable"
-    ],
-    [
-      "Game.Lab",
-      "Ash & Steel \u00b7 Quiet Circuit \u00b7 Below the Slate"
-    ],
-    [
-      "Selected",
-      "Addat \u00b7 Keepa API Bot \u00b7 IBM Telescope \u00b7 Portfolio OS"
-    ]
-  ],
-  "experience": [
-    [
-      "Lead.Dev",
-      "Hexprep \u00b7 Lead Developer \u00b7 2025\u20132026"
-    ],
-    [
-      "Security",
-      "Dizzitup \u00b7 Cybersecurity Intern \u00b7 2025"
-    ],
-    [
-      "Freelance",
-      "Full-Stack Developer \u00b7 2022\u20132025"
-    ],
-    [
-      "Leadership",
-      "Creative Club VP \u00b7 2024\u20132026"
+      "Hobbies.Digital",
+      "Gaming, Game Development, Linux Customization"
     ]
   ],
   "contact": [
     [
-      "Email",
+      "Email.Personal",
       "fkpani0@gmail.com"
     ],
     [
       "Portfolio",
-      "fkpanni.github.io"
+      "efkay.vercel.app"
     ],
     [
       "GitHub",
-      "github.com/fkpanni"
+      "fkpanni"
     ]
-  ]
+  ],
+  "stats_preview": {
+    "repos": 28,
+    "contributed": "\u2014",
+    "stars": 7,
+    "commits": "\u2014",
+    "followers": "\u2014",
+    "loc": "\u2014",
+    "additions": "\u2014",
+    "deletions": "\u2014"
+  }
 }

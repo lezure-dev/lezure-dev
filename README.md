@@ -1,5 +1,6 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/profile-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="./assets/profile-light.svg">
-  <img alt="efkay — Fahd Khan GitHub profile" src="./assets/profile-dark.svg" width="100%">
-</picture>
+<a href="https://efkay.vercel.app">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/dark_mode.svg">
+    <img alt="efkay GitHub profile README" src="./assets/light_mode.svg">
+  </picture>
+</a>
