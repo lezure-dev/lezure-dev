@@ -35,6 +35,7 @@ DARK = {
     "add": "#3fb950",
     "delete": "#f85149",
     "cc": "#ffffff",
+    "dots": "#ffffff",
 }
 LIGHT = {
     "bg": "#ffffff",
@@ -44,6 +45,7 @@ LIGHT = {
     "add": "#1a7f37",
     "delete": "#cf222e",
     "cc": "#000000",
+    "dots": "#000000",
 }
 
 W, H = 985, 530
@@ -402,16 +404,16 @@ def dots_between(label, value, min_dots=3):
     label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
     value_start = RIGHT_EDGE - len(str(value)) * CHAR_W
     gap = value_start - label_end
-    return "." * max(min_dots, int(gap / CHAR_W) + 1)
+    return "." * max(min_dots, int(gap / CHAR_W))
 
 
 def item(label, value, y):
     value = str(value)
     dots = dots_between(label, value)
     return (
-        f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>'
+        f'<tspan x="{RIGHT_X}" y="{y}" class="dots">. </tspan>'
         f'<tspan class="key">{escape(label)}</tspan>:'
-        f'<tspan class="cc"> {dots} </tspan>'
+        f'<tspan class="dots"> {dots} </tspan>'
         f'<tspan x="{RIGHT_EDGE}" y="{y}" text-anchor="end" class="value">'
         f"{escape(value)}</tspan>"
     )
@@ -419,7 +421,7 @@ def item(label, value, y):
 
 def continuation(value, y):
     return (
-        f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>'
+        f'<tspan x="{RIGHT_X}" y="{y}" class="dots">. </tspan>'
         f'<tspan x="{RIGHT_EDGE}" y="{y}" text-anchor="end" class="value">'
         f"{escape(str(value))}</tspan>"
     )
@@ -430,11 +432,11 @@ def left_stat(label, value, y):
     label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
     value_start = LEFT_VALUE_X - len(value) * CHAR_W
     gap = value_start - label_end
-    dots = "." * max(3, int(gap / CHAR_W) + 1)
+    dots = "." * max(3, int(gap / CHAR_W))
     return (
-        f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>'
+        f'<tspan x="{RIGHT_X}" y="{y}" class="dots">. </tspan>'
         f'<tspan class="key">{escape(label)}</tspan>:'
-        f'<tspan class="cc"> {dots} </tspan>'
+        f'<tspan class="dots"> {dots} </tspan>'
         f'<tspan x="{LEFT_VALUE_X}" y="{y}" text-anchor="end" class="value">'
         f"{escape(value)}</tspan>"
         f'<tspan x="{PIPE_X}" y="{y}" class="cc">|</tspan>'
@@ -446,10 +448,10 @@ def right_stat(label, value, y):
     label_end = RIGHT_LABEL_X + (len(label) + 2) * CHAR_W
     value_start = RIGHT_EDGE - len(value) * CHAR_W
     gap = value_start - label_end
-    dots = "." * max(3, int(gap / CHAR_W) + 1)
+    dots = "." * max(3, int(gap / CHAR_W))
     return (
         f'<tspan x="{RIGHT_LABEL_X}" y="{y}" class="key">{escape(label)}</tspan>:'
-        f'<tspan class="cc"> {dots} </tspan>'
+        f'<tspan class="dots"> {dots} </tspan>'
         f'<tspan x="{RIGHT_EDGE}" y="{y}" text-anchor="end" class="value">'
         f"{escape(value)}</tspan>"
     )
@@ -461,15 +463,15 @@ def code_stat_row(stats, y):
     label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
     value_start = LEFT_VALUE_X - len(value) * CHAR_W
     gap = value_start - label_end
-    dots = "." * max(3, int(gap / CHAR_W) + 1)
+    dots = "." * max(3, int(gap / CHAR_W))
 
     added = compact_stat(stats.get("additions"))
     deleted = compact_stat(stats.get("deletions"))
 
     return (
-        f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>'
+        f'<tspan x="{RIGHT_X}" y="{y}" class="dots">. </tspan>'
         f'<tspan class="key">{label}</tspan>:'
-        f'<tspan class="cc"> {dots} </tspan>'
+        f'<tspan class="dots"> {dots} </tspan>'
         f'<tspan x="{LEFT_VALUE_X}" y="{y}" text-anchor="end" class="value">'
         f"{escape(value)}</tspan>"
         f'<tspan x="{PIPE_X}" y="{y}" class="cc">|</tspan>'
@@ -509,7 +511,7 @@ def render(theme, stats):
         body.append(item(label, age_text() if value == "__AGE__" else value, y))
         y += ROW
 
-    body.append(f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>')
+    body.append(f'<tspan x="{RIGHT_X}" y="{y}" class="dots">. </tspan>')
     y += ROW
 
     for label, value in PROFILE["stack"]:
@@ -523,7 +525,7 @@ def render(theme, stats):
             body.append(item(label, value, y))
             y += ROW
 
-    body.append(f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>')
+    body.append(f'<tspan x="{RIGHT_X}" y="{y}" class="dots">. </tspan>')
     y += ROW
 
     for label, value in PROFILE["hobbies"]:
@@ -554,7 +556,7 @@ def render(theme, stats):
 <svg xmlns="http://www.w3.org/2000/svg" font-family="ConsolasFallback,Consolas,monospace" width="{W}px" height="{H}px" font-size="{FONT_SIZE}px">
 <style>
 @font-face{{src:local('Consolas'),local('Consolas Bold');font-family:'ConsolasFallback';font-display:swap;-webkit-size-adjust:109%;size-adjust:109%;}}
-.key{{fill:{C["key"]};}} .value{{fill:{C["value"]};}} .addColor{{fill:{C["add"]};}} .delColor{{fill:{C["delete"]};}} .cc{{fill:{C["cc"]};}}
+.key{{fill:{C["key"]};}} .value{{fill:{C["value"]};}} .addColor{{fill:{C["add"]};}} .delColor{{fill:{C["delete"]};}} .cc{{fill:{C["cc"]};}} .dots{{fill:{C["dots"]};}}
 text,tspan{{white-space:pre;}}
 </style>
 <rect width="{W}px" height="{H}px" fill="{C["bg"]}" rx="15"/>
