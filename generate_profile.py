@@ -2,20 +2,46 @@
 from pathlib import Path
 from xml.sax.saxutils import escape
 from zoneinfo import ZoneInfo
+import base64
 import calendar
 import datetime as dt
 import json
+import os
+import shutil
+import subprocess
+import tempfile
+import urllib.parse
+import urllib.request
 
 ROOT = Path(__file__).resolve().parent
 PROFILE = json.loads((ROOT / "profile.json").read_text(encoding="utf-8"))
+CACHE_PATH = ROOT / "stats_cache.json"
 LINES = (ROOT / "ascii" / "helix.txt").read_text(encoding="utf-8", errors="ignore").splitlines()
-while LINES and not LINES[0].strip(): LINES.pop(0)
-while LINES and not LINES[-1].strip(): LINES.pop()
+while LINES and not LINES[0].strip():
+    LINES.pop(0)
+while LINES and not LINES[-1].strip():
+    LINES.pop()
 lead = min((len(x) - len(x.lstrip(" ")) for x in LINES if x.strip()), default=0)
 LINES = [x[lead:].rstrip() for x in LINES]
 
-DARK = {"bg":"#161b22","main":"#c9d1d9","key":"#ffa657","value":"#a5d6ff","add":"#3fb950","delete":"#f85149","cc":"#616e7f"}
-LIGHT = {"bg":"#f6f8fa","main":"#24292f","key":"#953800","value":"#0a3069","add":"#1a7f37","delete":"#cf222e","cc":"#c2cfde"}
+DARK = {
+    "bg": "#000000",
+    "main": "#ffffff",
+    "key": "#00ff41",
+    "value": "#ffffff",
+    "add": "#3fb950",
+    "delete": "#f85149",
+    "cc": "#7aa2f7",
+}
+LIGHT = {
+    "bg": "#ffffff",
+    "main": "#000000",
+    "key": "#d0006f",
+    "value": "#000000",
+    "add": "#1a7f37",
+    "delete": "#cf222e",
+    "cc": "#000000",
+}
 
 W, H = 985, 530
 RIGHT_X = 300
@@ -23,6 +49,11 @@ RIGHT_EDGE = 970
 FONT_SIZE = 16
 CHAR_W = 9.6
 ROW = 20
+PIPE_X = 775
+LEFT_VALUE_X = 755
+RIGHT_LABEL_X = 795
+LOC_REFRESH_DAYS = 7
+
 
 def add_months(d, months):
     total = d.year * 12 + d.month - 1 + months
@@ -30,6 +61,7 @@ def add_months(d, months):
     month = m0 + 1
     day = min(d.day, calendar.monthrange(year, month)[1])
     return dt.date(year, month, day)
+
 
 def age_text():
     birthday = dt.date.fromisoformat(PROFILE["birthday"])
@@ -45,13 +77,248 @@ def age_text():
         cursor = add_months(cursor, 1)
         months += 1
     days = (today - cursor).days
-    return f"{years} years, {months} months, {days} days"
+    return f"{years} years, {months} months, {days}"
+
+
+def load_cache():
+    try:
+        data = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_cache(data):
+    CACHE_PATH.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def api_json(url, token=None, payload=None):
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "profile-readme-generator",
+        "X-GitHub-Api-Version": "2026-03-10",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    body = None
+    method = "GET"
+    if payload is not None:
+        body = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+        method = "POST"
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=30) as response:
+        return json.load(response)
+
+
+def paginated_repos(url, token=None):
+    repos = []
+    page = 1
+    separator = "&" if "?" in url else "?"
+    while True:
+        batch = api_json(f"{url}{separator}per_page=100&page={page}", token)
+        if not isinstance(batch, list):
+            break
+        repos.extend(batch)
+        if len(batch) < 100:
+            break
+        page += 1
+    return repos
+
+
+def contributed_repo_count(username, token):
+    if not token:
+        return None
+    query = '''
+    query($login: String!) {
+      user(login: $login) {
+        repositoriesContributedTo(
+          first: 1
+          includeUserRepositories: false
+          contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, PULL_REQUEST_REVIEW]
+        ) {
+          totalCount
+        }
+      }
+    }
+    '''
+    data = api_json(
+        "https://api.github.com/graphql",
+        token,
+        {"query": query, "variables": {"login": username}},
+    )
+    if data.get("errors"):
+        return None
+    user = data.get("data", {}).get("user") or {}
+    connection = user.get("repositoriesContributedTo") or {}
+    return connection.get("totalCount")
+
+
+def github_username():
+    owner = os.getenv("GITHUB_REPOSITORY_OWNER")
+    if owner:
+        return owner
+    for label, value in PROFILE.get("contact", []):
+        if label == "GitHub":
+            return str(value)
+    return PROFILE["header"].split("@", 1)[0]
+
+
+def clone_auth_env(token):
+    env = os.environ.copy()
+    if not token:
+        return env
+    basic = base64.b64encode(f"x-access-token:{token}".encode()).decode()
+    env["GIT_CONFIG_COUNT"] = "1"
+    env["GIT_CONFIG_KEY_0"] = "http.https://github.com/.extraheader"
+    env["GIT_CONFIG_VALUE_0"] = f"AUTHORIZATION: basic {basic}"
+    return env
+
+
+def current_loc(owned_repos, token):
+    if not owned_repos or not shutil.which("cloc") or not shutil.which("git"):
+        return None
+
+    total = 0
+    counted = 0
+    with tempfile.TemporaryDirectory(prefix="profile-loc-") as temp:
+        temp_root = Path(temp)
+        git_env = clone_auth_env(token)
+        for index, repo in enumerate(owned_repos):
+            if repo.get("fork") or repo.get("size", 0) == 0:
+                continue
+            full_name = repo.get("full_name")
+            if not full_name:
+                continue
+            dest = temp_root / f"repo-{index}"
+            clone = subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "--quiet",
+                    "--depth",
+                    "1",
+                    f"https://github.com/{full_name}.git",
+                    str(dest),
+                ],
+                env=git_env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=180,
+                check=False,
+            )
+            if clone.returncode != 0:
+                continue
+            try:
+                result = subprocess.run(
+                    [
+                        "cloc",
+                        "--json",
+                        "--quiet",
+                        "--exclude-dir=.git,node_modules,dist,build,.next,coverage,vendor",
+                        str(dest),
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=180,
+                    check=False,
+                )
+                if result.returncode == 0:
+                    data = json.loads(result.stdout)
+                    code = int((data.get("SUM") or {}).get("code", 0))
+                    total += code
+                    counted += 1
+            except (subprocess.TimeoutExpired, json.JSONDecodeError, ValueError):
+                pass
+            finally:
+                shutil.rmtree(dest, ignore_errors=True)
+    return total if counted else None
+
+
+def loc_is_stale(cache, username):
+    if cache.get("username") != username or cache.get("loc") is None:
+        return True
+    stamp = cache.get("loc_updated_at")
+    if not stamp:
+        return True
+    try:
+        previous = dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    now = dt.datetime.now(dt.timezone.utc)
+    return now - previous >= dt.timedelta(days=LOC_REFRESH_DAYS)
+
+
+def fetch_stats():
+    cache = load_cache()
+    username = github_username()
+    token = os.getenv("PROFILE_GITHUB_TOKEN", "").strip() or None
+    now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+    stats = dict(cache)
+    stats["username"] = username
+
+    owned_repos = []
+    try:
+        user = api_json(f"https://api.github.com/users/{urllib.parse.quote(username)}", token)
+        stats["followers"] = int(user.get("followers", 0))
+
+        if token:
+            repos = paginated_repos(
+                "https://api.github.com/user/repos?visibility=all&affiliation=owner,collaborator,organization_member",
+                token,
+            )
+        else:
+            repos = paginated_repos(
+                f"https://api.github.com/users/{urllib.parse.quote(username)}/repos?type=owner",
+                None,
+            )
+
+        owned_repos = [
+            repo
+            for repo in repos
+            if str((repo.get("owner") or {}).get("login", "")).lower() == username.lower()
+        ]
+        stats["repos"] = len(owned_repos)
+        stats["stars"] = sum(int(repo.get("stargazers_count", 0) or 0) for repo in owned_repos)
+
+        contributed = contributed_repo_count(username, token)
+        if contributed is not None:
+            stats["contributed"] = int(contributed)
+
+        stats["updated_at"] = now
+    except Exception as exc:
+        print(f"GitHub stats fetch failed; using cache where available: {type(exc).__name__}: {exc}")
+
+    force_loc = os.getenv("PROFILE_FORCE_LOC") == "1"
+    if owned_repos and (force_loc or loc_is_stale(stats, username)):
+        loc = current_loc(owned_repos, token)
+        if loc is not None:
+            stats["loc"] = int(loc)
+            stats["loc_updated_at"] = now
+
+    save_cache(stats)
+    return stats
+
+
+def fmt_stat(value):
+    if value is None or value == "":
+        return "..."
+    if isinstance(value, int):
+        return f"{value:,}"
+    try:
+        return f"{int(value):,}"
+    except (TypeError, ValueError):
+        return str(value)
+
 
 def dots_between(label, value, min_dots=3):
     label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
     value_start = RIGHT_EDGE - len(str(value)) * CHAR_W
     gap = value_start - label_end
-    return "." * max(min_dots, int(gap / CHAR_W) - 1)
+    return "." * max(min_dots, int(gap / CHAR_W) + 1)
+
 
 def item(label, value, y):
     value = str(value)
@@ -63,13 +330,44 @@ def item(label, value, y):
         f'<tspan x="{RIGHT_EDGE}" y="{y}" text-anchor="end" class="value">{escape(value)}</tspan>'
     )
 
+
 def continuation(value, y):
     return (
+        f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>'
         f'<tspan x="{RIGHT_EDGE}" y="{y}" text-anchor="end" class="value">'
         f'{escape(str(value))}</tspan>'
     )
 
-def render(theme):
+
+def left_stat(label, value, y):
+    value = fmt_stat(value)
+    label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
+    value_start = LEFT_VALUE_X - len(value) * CHAR_W
+    gap = value_start - label_end
+    dots = "." * max(3, int(gap / CHAR_W) + 1)
+    return (
+        f'<tspan x="{RIGHT_X}" y="{y}" class="cc">. </tspan>'
+        f'<tspan class="key">{escape(label)}</tspan>:'
+        f'<tspan class="cc"> {dots} </tspan>'
+        f'<tspan x="{LEFT_VALUE_X}" y="{y}" text-anchor="end" class="value">{escape(value)}</tspan>'
+        f'<tspan x="{PIPE_X}" y="{y}" class="cc">|</tspan>'
+    )
+
+
+def right_stat(label, value, y):
+    value = fmt_stat(value)
+    label_end = RIGHT_LABEL_X + (len(label) + 2) * CHAR_W
+    value_start = RIGHT_EDGE - len(value) * CHAR_W
+    gap = value_start - label_end
+    dots = "." * max(3, int(gap / CHAR_W) + 1)
+    return (
+        f'<tspan x="{RIGHT_LABEL_X}" y="{y}" class="key">{escape(label)}</tspan>:'
+        f'<tspan class="cc"> {dots} </tspan>'
+        f'<tspan x="{RIGHT_EDGE}" y="{y}" text-anchor="end" class="value">{escape(value)}</tspan>'
+    )
+
+
+def render(theme, stats):
     C = DARK if theme == "dark" else LIGHT
 
     ascii_font, ascii_line, ascii_top = 16.6, 14.15, 18
@@ -88,7 +386,7 @@ def render(theme):
 
     body = [
         f'<tspan x="{RIGHT_X}" y="30">{escape(PROFILE["header"])}</tspan>'
-        f'<tspan class="cc"> -{"—" * 54}-</tspan>'
+        f'<tspan class="cc"> -{"—" * 56}-</tspan>'
     ]
 
     y = 50
@@ -119,7 +417,7 @@ def render(theme):
 
     body.append(
         f'<tspan x="{RIGHT_X}" y="360">- Contact </tspan>'
-        f'<tspan class="cc">{"—" * 56}</tspan>'
+        f'<tspan class="cc">{"—" * 58}</tspan>'
     )
     cy = 380
     for label, value in PROFILE["contact"]:
@@ -128,51 +426,14 @@ def render(theme):
 
     body.append(
         f'<tspan x="{RIGHT_X}" y="450">- GitHub Stats </tspan>'
-        f'<tspan class="cc">{"—" * 51}</tspan>'
+        f'<tspan class="cc">{"—" * 53}</tspan>'
     )
 
-    PIPE_X = 775
-    RIGHT_LABEL_X = 795
-
-    def left_dots(label):
-        label_end = RIGHT_X + (2 + len(label) + 2) * CHAR_W
-        return "." * max(3, int((PIPE_X - 18 - label_end) / CHAR_W))
-
-    def right_dots(label):
-        label_end = RIGHT_LABEL_X + (len(label) + 2) * CHAR_W
-        return "." * max(3, int((RIGHT_EDGE - label_end) / CHAR_W))
-
-    body.append(
-        f'<tspan x="{RIGHT_X}" y="470" class="cc">. </tspan>'
-        f'<tspan class="key">Repos</tspan>:'
-        f'<tspan class="cc"> {left_dots("Repos")} </tspan>'
-        f'<tspan x="{PIPE_X}" y="470" class="cc">|</tspan>'
-        f'<tspan x="{RIGHT_LABEL_X}" y="470" class="key">Stars</tspan>:'
-        f'<tspan class="cc"> {right_dots("Stars")}</tspan>'
-    )
-
-    body.append(
-        f'<tspan x="{RIGHT_X}" y="490" class="cc">. </tspan>'
-        f'<tspan class="key">Commits</tspan>:'
-        f'<tspan class="cc"> {left_dots("Commits")} </tspan>'
-        f'<tspan x="{PIPE_X}" y="490" class="cc">|</tspan>'
-        f'<tspan x="{RIGHT_LABEL_X}" y="490" class="key">Followers</tspan>:'
-        f'<tspan class="cc"> {right_dots("Followers")}</tspan>'
-    )
-
-    loc_label = "Lines of Code on GitHub"
-    loc_label_end = RIGHT_X + (2 + len(loc_label) + 2) * CHAR_W
-    loc_dots = "." * max(3, int((PIPE_X - 18 - loc_label_end) / CHAR_W))
-    body.append(
-        f'<tspan x="{RIGHT_X}" y="510" class="cc">. </tspan>'
-        f'<tspan class="key">{loc_label}</tspan>:'
-        f'<tspan class="cc"> {loc_dots} </tspan>'
-        f'<tspan x="{PIPE_X}" y="510" class="cc">(</tspan>'
-        f'<tspan class="addColor">......++</tspan>'
-        f'<tspan class="cc">, </tspan>'
-        f'<tspan class="delColor">......--</tspan>'
-        f'<tspan class="cc">)</tspan>'
-    )
+    body.append(left_stat("Repos", stats.get("repos"), 470))
+    body.append(right_stat("Stars", stats.get("stars"), 470))
+    body.append(left_stat("Contrib", stats.get("contributed"), 490))
+    body.append(right_stat("Followers", stats.get("followers"), 490))
+    body.append(item("Lines of Code on GitHub", fmt_stat(stats.get("loc")), 510))
 
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" font-family="ConsolasFallback,Consolas,monospace" width="{W}px" height="{H}px" font-size="{FONT_SIZE}px">
@@ -186,11 +447,21 @@ text,tspan{{white-space:pre;}}
 <text x="{RIGHT_X}" y="30" fill="{C["main"]}">{''.join(body)}</text>
 </svg>'''
 
+
 def main():
+    stats = fetch_stats()
     for theme in ("dark", "light"):
-        (ROOT / "assets" / f"{theme}_mode.svg").write_text(render(theme), encoding="utf-8")
+        (ROOT / "assets" / f"{theme}_mode.svg").write_text(render(theme, stats), encoding="utf-8")
     print("Uptime:", age_text())
-    print("GitHub stats intentionally render as dotted placeholders.")
+    print(
+        "GitHub stats:",
+        f"repos={fmt_stat(stats.get('repos'))},",
+        f"contrib={fmt_stat(stats.get('contributed'))},",
+        f"stars={fmt_stat(stats.get('stars'))},",
+        f"followers={fmt_stat(stats.get('followers'))},",
+        f"loc={fmt_stat(stats.get('loc'))}",
+    )
+
 
 if __name__ == "__main__":
     main()
