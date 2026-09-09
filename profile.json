@@ -1,9 +1,14 @@
 {
   "header": "efkay@github",
+  "birthday": "2003-10-08",
   "system": [
     [
       "OS",
-      "Windows 11, EndeavourOS"
+      "Windows 11, EndeavourOS Linux"
+    ],
+    [
+      "Uptime",
+      "__AGE__"
     ],
     [
       "Role",
@@ -19,13 +24,16 @@
     ],
     [
       "IDE",
-      "VS Code"
+      "Neovim, VS Code"
     ]
   ],
   "stack": [
     [
       "Languages.Programming",
-      "TypeScript, Python, JavaScript, Swift, Java"
+      [
+        "TypeScript, Python, JavaScript, Swift",
+        "Java, SQL, C++, C"
+      ]
     ],
     [
       "Stack.Web",
@@ -39,11 +47,15 @@
   "hobbies": [
     [
       "Hobbies.Physical",
-      "Climbing, Hiking, Gym"
+      "Climbing"
     ],
     [
-      "Hobbies.Digital",
-      "Gaming, Game Development, Linux Customization"
+      "Hobbies.Creative",
+      "Art, Game Development"
+    ],
+    [
+      "Hobbies.Media",
+      "Gaming, Film"
     ]
   ],
   "contact": [
@@ -57,17 +69,17 @@
     ],
     [
       "GitHub",
-      "fkpanni"
+      "efkay"
     ]
   ],
   "stats_preview": {
-    "repos": 28,
-    "contributed": "\u2014",
-    "stars": 7,
-    "commits": "\u2014",
-    "followers": "\u2014",
-    "loc": "\u2014",
-    "additions": "\u2014",
-    "deletions": "\u2014"
+    "repos": "N/A",
+    "contributed": "N/A",
+    "stars": "N/A",
+    "commits": "N/A",
+    "followers": "N/A",
+    "loc": "N/A",
+    "additions": "N/A",
+    "deletions": "N/A"
   }
 }

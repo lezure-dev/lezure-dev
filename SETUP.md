@@ -1,56 +1,18 @@
-# efkay GitHub profile README — neofetch layout
+# efkay GitHub profile README — V11
 
-This version deliberately mirrors the information density and visual grammar of
-Andrew6rant's profile card while using efkay-specific content and a custom DNA ASCII.
+Changes in this pass:
 
-## Content
+- OS: Windows 11, EndeavourOS Linux
+- Uptime: age from 2003-10-08, dynamically recalculated in America/Chicago
+- IDE: Neovim, VS Code
+- Languages wrap under the value column instead of restarting at the label column
+- Hobbies: Climbing / Art + Game Development / Gaming + Film
+- Portfolio: efkay.vercel.app
+- GitHub display: efkay
+- Contact and GitHub Stats rules extend to the right edge
+- Preview stats remain N/A; the Action fills available public GitHub stats after push
+- LOC remains N/A for now
 
-- OS / role / location / education / IDE
-- three compact stack rows
-- hobbies section
-- contact section
-- GitHub stats section
-- portfolio links to `efkay.vercel.app`
+Preview uptime: 22 years, 11 months, 0 days
 
-## Dynamic GitHub stats
-
-The included Action updates:
-
-- owned repositories
-- repositories contributed to
-- stars received
-- commit contributions
-- followers
-- authored additions / deletions / net lines of code
-
-The LOC routine caches each repo using its default-branch HEAD SHA, so unchanged
-repositories do not need their entire commit history queried again.
-
-## Install
-
-Use your public profile repository:
-
-`fkpanni/fkpanni`
-
-Copy these files into it, then:
-
-```bash
-git add .
-git commit -m "feat: add neofetch profile readme"
-git push
-```
-
-The first Action run will replace the preview stat placeholders with live values.
-
-## Edit later
-
-- profile text: `profile.json`
-- ASCII: `ascii/helix.txt`
-
-Then run:
-
-```bash
-python generate_profile.py
-```
-
-or let the included GitHub Action regenerate it.
+Push the contents into your public `fkpanni/fkpanni` profile repository.
