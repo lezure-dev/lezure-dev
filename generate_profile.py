@@ -168,9 +168,9 @@ def render(theme):
         f'<tspan class="key">{loc_label}</tspan>:'
         f'<tspan class="cc"> {loc_dots} </tspan>'
         f'<tspan x="{PIPE_X}" y="510" class="cc">( </tspan>'
-        f'<tspan class="addColor">........++</tspan>'
+        f'<tspan class="addColor">......++</tspan>'
         f'<tspan class="cc">, </tspan>'
-        f'<tspan class="delColor">........--</tspan>'
+        f'<tspan class="delColor">......--</tspan>'
         f'<tspan class="cc"> )</tspan>'
     )
 
