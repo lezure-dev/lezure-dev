@@ -10,7 +10,6 @@ on:
       - "profile.json"
       - "ascii/**"
       - "generate_profile.py"
-      - "patch_generator.py"
       - ".github/workflows/update-profile.yml"
 
 permissions:
@@ -26,8 +25,6 @@ jobs:
           python-version: "3.12"
       - name: Install LOC counter
         run: sudo apt-get update && sudo apt-get install -y cloc
-      - name: Apply generator patch
-        run: python patch_generator.py
       - name: Regenerate profile
         env:
           PROFILE_GITHUB_TOKEN: ${{ secrets.PROFILE_GITHUB_TOKEN }}
@@ -36,7 +33,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add generate_profile.py assets/dark_mode.svg assets/light_mode.svg stats_cache.json
+          git add assets/dark_mode.svg assets/light_mode.svg stats_cache.json
           git diff --cached --quiet && exit 0
           git commit -m "chore: update profile"
           git pull --rebase origin main
