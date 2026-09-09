@@ -1,44 +1,28 @@
-# fkpanni GitHub profile README — DNA ASCII version
+# fkpanni GitHub profile README — DNA ASCII v8
 
-This version swaps the left-side art to your uploaded DNA ASCII.
+This version uses the newer ~80-character-wide DNA ASCII and sizes the card around the art itself.
 
-## Files
+- ASCII is centered in the left panel
+- card height follows the ASCII height instead of using a large fixed canvas
+- right-side profile information remains compact
+- dark and light SVGs included
 
-```text
-README.md
-profile.json
-generate_profile.py
-ascii/helix.txt
-assets/profile-dark.svg
-assets/profile-light.svg
-preview.png
-SETUP.md
-```
+## Install
 
-## Install on GitHub
+Use the public profile repository:
 
-Use a public repository named exactly:
+`fkpanni/fkpanni`
 
-```text
-fkpanni
-```
-
-Copy these files into that repo, then push:
+Then copy these files in and run:
 
 ```bash
 git add .
-git commit -m "feat: dna ascii profile readme"
+git commit -m "feat: refine dna ascii readme"
 git push
 ```
 
-## Edit later
+## Edit
 
-- Update the right-side content in `profile.json`
-- Replace the left-side ASCII in `ascii/helix.txt`
-- Re-run:
-
-```bash
-python generate_profile.py
-```
-
-Then commit and push again.
+- ASCII: `ascii/helix.txt`
+- profile text: `profile.json`
+- regenerate: `python generate_profile.py`
