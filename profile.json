@@ -24,7 +24,7 @@
     ],
     [
       "IDE",
-      "Neovim, VS Code"
+      "Neovim 0.12.5, VS Code 1.136.2"
     ]
   ],
   "stack": [
@@ -47,15 +47,15 @@
   "hobbies": [
     [
       "Hobbies.Physical",
-      "Climbing"
+      "Climbing, Hiking, Travel"
     ],
     [
       "Hobbies.Creative",
-      "Art, Game Development"
+      "Art, Game Development, UI/UX Design"
     ],
     [
       "Hobbies.Media",
-      "Gaming, Film"
+      "Gaming, Film, Reading"
     ]
   ],
   "contact": [
