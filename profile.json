@@ -73,13 +73,13 @@
     ]
   ],
   "stats_preview": {
-    "repos": "N/A",
-    "contributed": "N/A",
-    "stars": "N/A",
-    "commits": "N/A",
-    "followers": "N/A",
-    "loc": "N/A",
-    "additions": "N/A",
-    "deletions": "N/A"
+    "repos": "",
+    "contributed": "",
+    "stars": "",
+    "commits": "",
+    "followers": "",
+    "loc": "",
+    "additions": "",
+    "deletions": ""
   }
 }
