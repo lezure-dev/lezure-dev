@@ -1,28 +1,24 @@
-# fkpanni GitHub profile README — DNA ASCII v8
+# fkpanni GitHub profile README — compact DNA v9
 
-This version uses the newer ~80-character-wide DNA ASCII and sizes the card around the art itself.
+This version uses the shorter 29×49 DNA ASCII and a 620px-high card.
 
-- ASCII is centered in the left panel
-- card height follows the ASCII height instead of using a large fixed canvas
-- right-side profile information remains compact
-- dark and light SVGs included
+- artwork is enlarged to span almost the entire left panel
+- overall README card is much shorter
+- right-side typography is tightened to preserve the same information
+- dark/light variants included
 
 ## Install
 
-Use the public profile repository:
-
-`fkpanni/fkpanni`
-
-Then copy these files in and run:
+Use the public profile repository `fkpanni/fkpanni`, copy these files in, then:
 
 ```bash
 git add .
-git commit -m "feat: refine dna ascii readme"
+git commit -m "feat: compact dna profile readme"
 git push
 ```
 
-## Edit
+Edit `profile.json` or `ascii/helix.txt`, then regenerate with:
 
-- ASCII: `ascii/helix.txt`
-- profile text: `profile.json`
-- regenerate: `python generate_profile.py`
+```bash
+python generate_profile.py
+```
